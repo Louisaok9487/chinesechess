@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>藍氏象棋</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --board-bg: #d8c3a5;
+            --board-border: #8e795e;
+            --piece-bg: #f9f6f2;
+            --piece-shadow: rgba(0,0,0,0.3);
+            --red-text: #c84b31;
+            --black-text: #2d2d2d;
+            --selected-glow: #f7b733;
+            --hint-color: rgba(10, 132, 38, 0.5);
+            --font-family-status: 'Noto Serif TC', serif;
+            --font-family-piece: 'Ma Shan Zheng', cursive;
+        }
+
+        body {
+            font-family: var(--font-family-status);
+            background-color: #f0e9dc;
+            background-image: url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAH0BDgDASIAAhEBAxEB/8QAHQAAAQQDAQEAAAAAAAAAAAAAAAQFBgcCAwgBCf/EAGEQAAEDAwIDBAUGCQkJCwgDAQECAwQABREGEiExBxNBUWEUIjJxgZEVFiNCUpKhsQkzNDU2N1idwdIXJENTY4KiwtFERVWTlKOTo7PC8PE4Vld0g4SVo8MmRmWVwv/EABsBAQEBAQEBAQEAAAAAAAAAAAABAgMEBQYH/8QAPBEAAgECAwQHBgQGAgMBAAAAAAECEQMEEiExBUFRcRNSYZEGFCIygaGxwdHwI0JS4fEzYnLxJIKiFUP/2gAMAwEAAhEDEQA/APKYoooqRhRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQBRRRQ-1EAmFFFFIoUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUUUAUUU-D/9k=');
+            background-size: cover;
+            background-position: center;
+            overflow-y: auto; /* 允許垂直滾動 */
+        }
+
+        .game-wrapper {
+            background-color: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            padding: 1rem;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 600px; /* 棋盤畫大一點 */
+            margin: 2rem auto; 
+            padding: 1.5rem;
+            background-color: var(--board-bg);
+            background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+            border-radius: 15px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.25), 0 5px 10px rgba(0,0,0,0.15);
+            border: 8px solid var(--board-border);
+        }
+
+        #game-board {
+            position: relative;
+            /* SVG Board background with corrected river lines */
+            background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 90 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cstyle%3E.river-text %7B font-size: 8px; font-family: 'Ma Shan Zheng', cursive; fill: %238e795e; %7D%3C/style%3E%3C/defs%3E%3C!-- Vertical Lines --%3E%3Cpath d='M5 5 V45 M5 55 V95 M15 5 V45 M15 55 V95 M25 5 V45 M25 55 V95 M35 5 V45 M35 55 V95 M45 5 V45 M45 55 V95 M55 5 V45 M55 55 V95 M65 5 V45 M65 55 V95 M75 5 V45 M75 55 V95 M85 5 V45 M85 55 V95' stroke='%238e795e' stroke-width='0.5'/%3E%3C!-- Horizontal Lines --%3E%3Cpath d='M5 5 H85 M5 15 H85 M5 25 H85 M5 35 H85 M5 45 H85 M5 55 H85 M5 65 H85 M5 75 H85 M5 85 H85 M5 95 H85' stroke='%238e795e' stroke-width='0.5'/%3E%3C!-- Palaces --%3E%3Cpath d='M35 5 L55 25 M55 5 L35 25 M35 75 L55 95 M55 75 L35 95' stroke='%238e795e' stroke-width='0.5'/%3E%3C!-- River --%3E%3Ctext x='17' y='53' class='river-text'%3E楚 河%3C/text%3E%3Ctext x='57' y='53' class='river-text'%3E漢 界%3C/text%3E%3C/svg%3E");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            aspect-ratio: 9/10;
+        }
+
+        .piece {
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(1.6rem, 3.5vw, 2.0rem); /* 調整字體大小 */
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: absolute;
+            background-color: var(--piece-bg);
+            box-shadow: inset 0 -3px 5px rgba(0,0,0,0.1), 0 5px 10px var(--piece-shadow);
+            border: 3px solid var(--board-border);
+            z-index: 10;
+            /* 使用 transform 定位 */
+            transform: translate(-50%, -50%);
+        }
+        
+        .piece.red-piece {
+            color: var(--red-text);
+            border: 3px solid var(--red-text);
+            text-shadow: 0 0 5px rgba(200, 75, 49, 0.5);
+        }
+
+        .piece.black-piece {
+            color: var(--black-text);
+            border: 3px solid var(--black-text);
+            text-shadow: 0 0 5px rgba(45, 45, 45, 0.3);
+        }
+        
+        .piece.selected {
+            box-shadow: 0 0 25px 8px var(--selected-glow), inset 0 -3px 5px rgba(0,0,0,0.1);
+            /* transform scale 會疊加，所以分開設定 */
+            z-index: 20;
+        }
+
+        .hint {
+            position: absolute;
+            background-color: var(--hint-color);
+            border-radius: 50%;
+            z-index: 5;
+            animation: pulse 1.5s infinite;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.8); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.8); }
+        }
+        
+        #game-status {
+            font-family: var(--font-family-status);
+            font-size: 1.25rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 1rem;
+            min-height: 70px;
+            color: var(--black-text);
+            background-color: rgba(255,255,255,0.6);
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+
+        #restart-button {
+            background-color: var(--board-border);
+            color: var(--piece-bg);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-family: var(--font-family-status);
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px var(--piece-shadow);
+        }
+
+        #restart-button:hover {
+            background-color: #7a684e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px var(--piece-shadow);
+        }
+
+        /* Modal Base Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-box {
+            padding: 2rem 3rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: scale(0.7);
+            transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            position: relative;
+            overflow: hidden;
+        }
+        .modal.show .modal-box {
+            transform: scale(1);
+        }
+        .modal-box h2 {
+            font-family: var(--font-family-piece);
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .modal-box p {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+        .modal-box .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        .modal-box button {
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .modal-box .confirm-yes {
+            background-color: var(--red-text);
+            color: white;
+        }
+        .modal-box .confirm-yes:hover {
+            background-color: #a53c27;
+        }
+        .modal-box .confirm-no {
+            background-color: #ccc;
+            color: #333;
+        }
+        .modal-box .confirm-no:hover {
+            background-color: #bbb;
+        }
+        
+        /* Victory Modal Specifics */
+        #victory-modal .modal-box {
+             background: linear-gradient(135deg, #fdfcfb, #e2d1c3);
+             color: var(--board-border);
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background-color: #f00;
+            top: -50px;
+            opacity: 0;
+            animation: fall 5s linear infinite;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(120vh) rotate(360deg);
+                opacity: 1;
+            }
+        }
+        
+        /* Defeat Modal Specifics */
+        #defeat-modal .modal-box {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: #f8f9fa;
+        }
+        .leaf {
+            position: absolute;
+            width: 20px;
+            height: 10px;
+            background-color: #a0a0a0;
+            opacity: 0.5;
+            border-radius: 10px 0;
+            top: -20px;
+            animation: blow-wind 4s linear infinite;
+        }
+        @keyframes blow-wind {
+          0% {
+            transform: translateX(-50px) rotate(0deg);
+            opacity: 0;
+          }
+          20% {
+            opacity: 0.7;
+          }
+          100% {
+            transform: translateX(300px) translateY(150px) rotate(720deg);
+            opacity: 0;
+          }
+        }
+
+        /* Confirmation Modal Specifics */
+        #confirm-modal .modal-box {
+            background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+            color: #333;
+        }
+
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="game-wrapper">
+        <div class="game-container">
+            <div id="game-status"></div>
+            <div id="game-board"></div>
+            <div class="text-center mt-4">
+                <button id="restart-button">重新開始</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="victory-modal" class="modal">
+        <div class="modal-box">
+            <h2>大獲全勝！</h2>
+            <p>您已成功擊敗對手！</p>
+        </div>
+    </div>
+
+    <div id="defeat-modal" class="modal">
+        <div class="modal-box">
+            <h2>再接再厲！</h2>
+            <p>失敗乃成功之母，整理旗鼓，再挑戰一局！</p>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal">
+        <div class="modal-box">
+            <h2>三思而後行</h2>
+            <p>此步兇險，將(帥)有被吃之虞，是否確定要走？</p>
+            <div class="modal-buttons">
+                <button id="confirm-yes-btn" class="confirm-yes">確定</button>
+                <button id="confirm-no-btn" class="confirm-no">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const boardEl = document.getElementById('game-board');
+        const statusEl = document.getElementById('game-status');
+        const restartBtn = document.getElementById('restart-button');
+        const victoryModal = document.getElementById('victory-modal');
+        const defeatModal = document.getElementById('defeat-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+
+        const BOARD_COLS = 9;
+        const BOARD_ROWS = 10;
+        const AI_SEARCH_DEPTH = 3; // 提升AI思考深度
+
+        const PIECE_CONFIG = {
+            'k': { name: '將', color: 'black' }, 'g': { name: '帥', color: 'red' },
+            'a': { name: '士', color: 'black' }, 'd': { name: '仕', color: 'red' },
+            'e': { name: '象', color: 'black' }, 'h': { name: '相', color: 'red' },
+            'r': { name: '車', color: 'black' }, 't': { name: '俥', color: 'red' },
+            'n': { name: '馬', color: 'black' }, 'm': { name: '傌', color: 'red' },
+            'c': { name: '炮', color: 'black' }, 'x': { name: '砲', color: 'red' },
+            'p': { name: '卒', color: 'black' }, 's': { name: '兵', color: 'red' }
+        };
+        const pieceValues = { '帥': 10000, '將': 10000, '仕': 120, '士': 120, '相': 120, '象': 120, '俥': 500, '車': 500, '傌': 300, '馬': 300, '砲': 320, '炮': 320, '兵': 80, '卒': 80 };
+
+        const initialBoardSetup = [
+            "r", "n", "e", "a", "k", "a", "e", "n", "r",
+            "",  "",  "",  "",  "",  "",  "",  "",  "",
+            "", "c",  "",  "",  "",  "",  "", "c",  "",
+            "p", "", "p",  "", "p",  "", "p",  "", "p",
+            "",  "",  "",  "",  "",  "",  "",  "",  "",
+            "",  "",  "",  "",  "",  "",  "",  "",  "",
+            "s", "", "s",  "", "s",  "", "s",  "", "s",
+            "", "x",  "",  "",  "",  "",  "", "x",  "",
+            "",  "",  "",  "",  "",  "",  "",  "",  "",
+            "t", "m", "h", "d", "g", "d", "h", "m", "t",
+        ];
+        
+        let boardState = [];
+        let playerColor = 'red'; // 玩家執紅
+        let aiColor = 'black';   // AI 執黑
+        let currentPlayer = 'red';
+        let selectedPiece = null;
+        let gameOver = false;
+        let isPlayerTurn = true;
+        let pendingMove = null;
+
+        let moveSound, captureSound;
+        
+        function setupSounds() {
+            if (typeof Tone === 'undefined') return;
+            moveSound = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0 } }).toDestination();
+            captureSound = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4, attackCurve: 'exponential' } }).toDestination();
+        }
+
+        function playSound(type) {
+             if (typeof Tone === 'undefined' || Tone.context.state !== 'running') return;
+            try {
+                if (type === 'move') moveSound.triggerAttackRelease('0.1');
+                if (type === 'capture') captureSound.triggerAttackRelease('C3', '8n');
+            } catch (e) { console.error("音效播放失敗:", e); }
+        }
+
+        function initGame() {
+            gameOver = false;
+            currentPlayer = 'red';
+            selectedPiece = null;
+            isPlayerTurn = true;
+            pendingMove = null;
+            statusEl.textContent = '歡迎來到藍氏象棋！紅方先行。';
+            victoryModal.classList.remove('show');
+            defeatModal.classList.remove('show');
+            confirmModal.classList.remove('show');
+            
+            boardState = Array(BOARD_ROWS).fill(null).map(() => Array(BOARD_COLS).fill(null));
+            initialBoardSetup.forEach((key, index) => {
+                if (key) {
+                    const row = Math.floor(index / BOARD_COLS);
+                    const col = index % BOARD_COLS;
+                    boardState[row][col] = { ...PIECE_CONFIG[key], x: col, y: row };
+                }
+            });
+            renderBoard();
+        }
+
+        function renderBoard() {
+            boardEl.innerHTML = ''; // Clear board
+            const rect = boardEl.getBoundingClientRect();
+            const cellWidth = rect.width / (BOARD_COLS - 1);
+            const cellHeight = rect.height / (BOARD_ROWS - 1);
+            const pieceSize = Math.min(cellWidth, cellHeight) * 0.95; // Make pieces more compact
+
+            for (let y = 0; y < BOARD_ROWS; y++) {
+                for (let x = 0; x < BOARD_COLS; x++) {
+                    const pieceData = boardState[y][x];
+                    if (pieceData) {
+                        const pieceEl = document.createElement('div');
+                        pieceEl.className = `piece ${pieceData.color}-piece`;
+                        pieceEl.textContent = pieceData.name;
+                        
+                        pieceEl.style.width = `${pieceSize}px`;
+                        pieceEl.style.height = `${pieceSize}px`;
+                        
+                        const left = x * cellWidth;
+                        const top = y * cellHeight;
+                        
+                        pieceEl.style.left = `${left}px`;
+                        pieceEl.style.top = `${top}px`;
+                        
+                        pieceEl.dataset.x = x;
+                        pieceEl.dataset.y = y;
+                        if (selectedPiece && selectedPiece.x === x && selectedPiece.y === y) {
+                            pieceEl.classList.add('selected');
+                            pieceEl.style.transform = 'translate(-50%, -50%) scale(1.08)';
+                        }
+                        boardEl.appendChild(pieceEl);
+                    }
+                }
+            }
+        }
+        
+        function clearHighlights() {
+            document.querySelectorAll('.hint').forEach(el => el.remove());
+        }
+
+        function highlightMoves(moves) {
+            clearHighlights();
+            const rect = boardEl.getBoundingClientRect();
+            const cellWidth = rect.width / (BOARD_COLS - 1);
+            const cellHeight = rect.height / (BOARD_ROWS - 1);
+            const pieceSize = Math.min(cellWidth, cellHeight) * 0.95;
+            const hintSize = pieceSize * 0.4;
+
+            moves.forEach(move => {
+                const hintEl = document.createElement('div');
+                hintEl.className = 'hint';
+                hintEl.style.width = `${hintSize}px`;
+                hintEl.style.height = `${hintSize}px`;
+
+                const left = move.toX * cellWidth;
+                const top = move.toY * cellHeight;
+                hintEl.style.left = `${left}px`;
+                hintEl.style.top = `${top}px`;
+
+                hintEl.dataset.x = move.toX;
+                hintEl.dataset.y = move.toY;
+                boardEl.appendChild(hintEl);
+            });
+        }
+
+        function getPhysicalMoves(piece, board) {
+            const moves = [];
+            for (let y = 0; y < BOARD_ROWS; y++) {
+                for (let x = 0; x < BOARD_COLS; x++) {
+                    if (isValidMove(piece, x, y, board)) {
+                        moves.push({ toX: x, toY: y });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function getLegalMoves(piece, board) {
+            const moves = [];
+            const physicalMoves = getPhysicalMoves(piece, board);
+            for (const move of physicalMoves) {
+                const tempBoard = JSON.parse(JSON.stringify(board));
+                const pieceToMove = tempBoard[piece.y][piece.x];
+                performMove(pieceToMove, move.toX, move.toY, tempBoard, true);
+                if (!isKingInCheck(piece.color, tempBoard)) {
+                    moves.push(move);
+                }
+            }
+            return moves;
+        }
+
+        function handleBoardClick(e) {
+            if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') {
+                Tone.start();
+            }
+            if (gameOver || !isPlayerTurn) return;
+            
+            const rect = boardEl.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            const x = Math.round(clickX / (rect.width / (BOARD_COLS - 1)));
+            const y = Math.round(clickY / (rect.height / (BOARD_ROWS - 1)));
+
+            if (selectedPiece) {
+                const isPhysicalMove = getPhysicalMoves(selectedPiece, boardState).some(m => m.toX === x && m.toY === y);
+                if (isPhysicalMove) {
+                    if (isLosingMove(selectedPiece, x, y)) {
+                        pendingMove = { piece: selectedPiece, toX: x, toY: y };
+                        confirmModal.classList.add('show');
+                    } else {
+                        movePiece(selectedPiece, x, y);
+                    }
+                } else {
+                    selectedPiece = null;
+                    clearHighlights();
+                    const newClickedPiece = boardState[y]?.[x];
+                    if (newClickedPiece && newClickedPiece.color === currentPlayer) {
+                        selectedPiece = newClickedPiece;
+                        renderBoard();
+                        const moves = getPhysicalMoves(selectedPiece, boardState);
+                        highlightMoves(moves);
+                    }
+                }
+            } else {
+                const clickedPiece = boardState[y]?.[x];
+                if (clickedPiece && clickedPiece.color === currentPlayer) {
+                    selectedPiece = clickedPiece;
+                    renderBoard();
+                    const moves = getPhysicalMoves(selectedPiece, boardState);
+                    highlightMoves(moves);
+                }
+            }
+        }
+        
+        function isLosingMove(piece, toX, toY) {
+            const tempBoard = JSON.parse(JSON.stringify(boardState));
+            const pieceToMove = tempBoard[piece.y][piece.x];
+            performMove(pieceToMove, toX, toY, tempBoard, true);
+            
+            const opponentMoves = getAllLegalMoves(aiColor, tempBoard);
+            for (const move of opponentMoves) {
+                if (move.target && (move.target.name === '帥' || move.target.name === '將')) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function performMove(piece, toX, toY, currentBoard, isSimulation = false) {
+            const fromX = piece.x;
+            const fromY = piece.y;
+            const targetPiece = currentBoard[toY][toX];
+            
+            if (!isSimulation) {
+                if (targetPiece) { playSound('capture'); } 
+                else { playSound('move'); }
+            }
+
+            currentBoard[toY][toX] = { ...piece, x: toX, y: toY };
+            currentBoard[fromY][fromX] = null;
+        }
+
+        function movePiece(piece, toX, toY) {
+            performMove(piece, toX, toY, boardState, false);
+            selectedPiece = null;
+            clearHighlights();
+            renderBoard();
+            
+            if (checkEndGame()) return;
+            switchPlayer();
+            if(!gameOver && currentPlayer === aiColor) triggerAIMove();
+        }
+        
+        function switchPlayer() {
+            currentPlayer = (currentPlayer === 'red') ? 'black' : 'red';
+            isPlayerTurn = (currentPlayer === playerColor);
+            if (isPlayerTurn) {
+                statusEl.textContent = `輪到您 (紅方) 行動`;
+                if (isKingInCheck(playerColor, boardState)) {
+                    statusEl.textContent += " (將軍！)";
+                }
+            } else {
+                statusEl.textContent = `輪到 AI (黑方) 思考中...`;
+            }
+        }
+
+        // --- 象棋規則 ---
+        function isValidMove(piece, toX, toY, board) {
+            const target = board[toY][toX];
+            if (target && target.color === piece.color) return false;
+
+            const { name, x: fromX, y: fromY } = piece;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+
+            switch (name) {
+                case '帥': case '將':
+                    if (target && (target.name === '將' || target.name === '帥')) {
+                        if (dx === 0 && getPiecesBetween(piece, target, board).length === 0) return true;
+                    }
+                    if (Math.abs(dx) + Math.abs(dy) !== 1) return false;
+                    if (toX < 3 || toX > 5) return false;
+                    if (piece.color === 'red' && toY < 7) return false;
+                    if (piece.color === 'black' && toY > 2) return false;
+                    return true;
+                case '仕': case '士':
+                    if (Math.abs(dx) !== 1 || Math.abs(dy) !== 1) return false;
+                    if (toX < 3 || toX > 5) return false;
+                    if (piece.color === 'red' && toY < 7) return false;
+                    if (piece.color === 'black' && toY > 2) return false;
+                    return true;
+                case '相': case '象':
+                    if (Math.abs(dx) !== 2 || Math.abs(dy) !== 2) return false;
+                    if (piece.color === 'red' && toY < 5) return false;
+                    if (piece.color === 'black' && toY > 4) return false;
+                    if (board[fromY + dy / 2][fromX + dx / 2]) return false;
+                    return true;
+                case '俥': case '車':
+                    if (dx !== 0 && dy !== 0) return false;
+                    return getPiecesBetween(piece, {x: toX, y: toY}, board).length === 0;
+                case '傌': case '馬':
+                    if (!((Math.abs(dx) === 1 && Math.abs(dy) === 2) || (Math.abs(dx) === 2 && Math.abs(dy) === 1))) return false;
+                    if (Math.abs(dx) === 2 && board[fromY][fromX + dx / 2]) return false;
+                    if (Math.abs(dy) === 2 && board[fromY + dy / 2][fromX]) return false;
+                    return true;
+                case '砲': case '炮':
+                    if (dx !== 0 && dy !== 0) return false;
+                    const piecesBetween = getPiecesBetween(piece, {x: toX, y: toY}, board);
+                    return target ? piecesBetween.length === 1 : piecesBetween.length === 0;
+                case '兵':
+                    return (fromY > 4 && dx === 0 && dy === -1) || (fromY <= 4 && ( (dx === 0 && dy === -1) || (Math.abs(dx) === 1 && dy === 0) ));
+                case '卒':
+                     return (fromY < 5 && dx === 0 && dy === 1) || (fromY >= 5 && ( (dx === 0 && dy === 1) || (Math.abs(dx) === 1 && dy === 0) ));
+            }
+            return false;
+        }
+        
+        function getPiecesBetween(p1, p2, board) {
+            const pieces = [];
+            if (p1.x === p2.x) { // 垂直
+                const startY = Math.min(p1.y, p2.y);
+                const endY = Math.max(p1.y, p2.y);
+                for (let y = startY + 1; y < endY; y++) {
+                    if (board[y][p1.x]) pieces.push(board[y][p1.x]);
+                }
+            } else if (p1.y === p2.y) { // 水平
+                const startX = Math.min(p1.x, p2.x);
+                const endX = Math.max(p1.x, p2.x);
+                for (let x = startX + 1; x < endX; x++) {
+                    if (board[p1.y][x]) pieces.push(board[p1.y][x]);
+                }
+            }
+            return pieces;
+        }
+        
+        function findKing(color, board) {
+            const kingName = color === 'red' ? '帥' : '將';
+            for (let y = 0; y < BOARD_ROWS; y++) {
+                for (let x = 0; x < BOARD_COLS; x++) {
+                    if (board[y][x] && board[y][x].name === kingName) {
+                        return board[y][x];
+                    }
+                }
+            }
+            return null;
+        }
+
+        function isKingInCheck(kingColor, board) {
+            const king = findKing(kingColor, board);
+            if (!king) return true; // King is captured
+            const opponentColor = kingColor === 'red' ? 'black' : 'red';
+            for (let y = 0; y < BOARD_ROWS; y++) {
+                for (let x = 0; x < BOARD_COLS; x++) {
+                    const piece = board[y][x];
+                    if (piece && piece.color === opponentColor) {
+                        if (isValidMove(piece, king.x, king.y, board)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function checkEndGame() {
+            if (gameOver) return true;
+            
+            if (!findKing('red', boardState)) {
+                endGame('黑方');
+                return true;
+            }
+            if (!findKing('black', boardState)) {
+                endGame('紅方');
+                return true;
+            }
+
+            const moves = getAllLegalMoves(currentPlayer, boardState);
+            if (moves.length === 0) {
+                if (isKingInCheck(currentPlayer, boardState)) {
+                    endGame(currentPlayer === 'red' ? '黑方' : '紅方'); // Checkmate
+                } else {
+                    endGame(null, true); // Stalemate
+                }
+                return true;
+            }
+            return false;
+        }
+        
+        function endGame(winner, isDraw = false) {
+            gameOver = true;
+            if (isDraw) {
+                statusEl.textContent = '和局！';
+            } else {
+                statusEl.textContent = `遊戲結束！${winner}獲勝！`;
+                const winnerColor = winner === '紅方' ? 'red' : 'black';
+                if (winnerColor === playerColor) {
+                    showVictoryModal();
+                } else {
+                    showDefeatModal();
+                }
+            }
+        }
+
+        function showVictoryModal() {
+            const victoryBox = victoryModal.querySelector('.modal-box');
+            victoryBox.innerHTML = '<h2>大獲全勝！</h2><p>您已成功擊敗對手！</p>'; // Reset content
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDelay = Math.random() * 5 + 's';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.transform = `scale(${Math.random() * 0.5 + 0.5})`;
+                victoryBox.appendChild(confetti);
+            }
+            victoryModal.classList.add('show');
+        }
+
+        function showDefeatModal() {
+            const defeatBox = defeatModal.querySelector('.modal-box');
+            defeatBox.innerHTML = '<h2>再接再厲！</h2><p>失敗乃成功之母，整理旗鼓，再挑戰一局！</p>'; // Reset content
+
+            for (let i = 0; i < 15; i++) {
+                const leaf = document.createElement('div');
+                leaf.classList.add('leaf');
+                leaf.style.left = (Math.random() * 120 - 20) + '%'; // Start from off-screen left
+                leaf.style.animationDelay = (Math.random() * 4) + 's';
+                leaf.style.animationDuration = (Math.random() * 2 + 3) + 's';
+                defeatBox.appendChild(leaf);
+            }
+            defeatModal.classList.add('show');
+        }
+
+        // --- AI LOGIC ---
+        function triggerAIMove() {
+            isPlayerTurn = false;
+            setTimeout(() => {
+                if (checkEndGame()) return;
+                const bestMove = findBestMove();
+                if (bestMove) {
+                    movePiece(bestMove.piece, bestMove.toX, bestMove.toY);
+                } else {
+                    endGame(playerColor === 'red' ? '紅方' : '黑方');
+                }
+            }, 200);
+        }
+
+        function findBestMove() {
+            let bestScore = -Infinity;
+            let bestMove = null;
+            const moves = getAllLegalMoves(aiColor, boardState);
+
+            if (moves.length === 0) return null;
+
+            for (const move of moves) {
+                const boardCopy = JSON.parse(JSON.stringify(boardState));
+                const pieceCopy = boardCopy[move.piece.y][move.piece.x];
+                performMove(pieceCopy, move.toX, move.toY, boardCopy, true);
+                const score = minimax(boardCopy, AI_SEARCH_DEPTH - 1, false, -Infinity, Infinity);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = move;
+                }
+            }
+            return bestMove;
+        }
+
+        function minimax(board, depth, isMaximizing, alpha, beta) {
+            if (depth === 0) return quiescenceSearch(board, alpha, beta, isMaximizing, 2);
+
+            const moves = getAllLegalMoves(isMaximizing ? aiColor : playerColor, board);
+            if (moves.length === 0) return evaluateBoard(board);
+            
+            moves.sort((a, b) => {
+                const aVal = a.target ? pieceValues[a.target.name] : 0;
+                const bVal = b.target ? pieceValues[b.target.name] : 0;
+                return bVal - aVal;
+            });
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (const move of moves) {
+                    const boardCopy = JSON.parse(JSON.stringify(board));
+                    const pieceCopy = boardCopy[move.piece.y][move.piece.x];
+                    performMove(pieceCopy, move.toX, move.toY, boardCopy, true);
+                    const evaluation = minimax(boardCopy, depth - 1, false, alpha, beta);
+                    maxEval = Math.max(maxEval, evaluation);
+                    alpha = Math.max(alpha, evaluation);
+                    if (beta <= alpha) break;
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (const move of moves) {
+                    const boardCopy = JSON.parse(JSON.stringify(board));
+                    const pieceCopy = boardCopy[move.piece.y][move.piece.x];
+                    performMove(pieceCopy, move.toX, move.toY, boardCopy, true);
+                    const evaluation = minimax(boardCopy, depth - 1, true, alpha, beta);
+                    minEval = Math.min(minEval, evaluation);
+                    beta = Math.min(beta, evaluation);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
+            }
+        }
+        
+        function quiescenceSearch(board, alpha, beta, isMaximizing, depth) {
+            const stand_pat = evaluateBoard(board);
+            if (depth === 0) return stand_pat;
+
+            if (isMaximizing) {
+                alpha = Math.max(alpha, stand_pat);
+            } else {
+                beta = Math.min(beta, stand_pat);
+            }
+            if (alpha >= beta) return isMaximizing ? alpha : beta;
+
+            const captureMoves = getAllLegalMoves(isMaximizing ? aiColor : playerColor, board)
+                .filter(m => m.target !== null);
+
+            for (const move of captureMoves) {
+                const boardCopy = JSON.parse(JSON.stringify(board));
+                const pieceCopy = boardCopy[move.piece.y][move.piece.x];
+                performMove(pieceCopy, move.toX, move.toY, boardCopy, true);
+                const score = quiescenceSearch(boardCopy, alpha, beta, !isMaximizing, depth - 1);
+
+                if (isMaximizing) {
+                    alpha = Math.max(alpha, score);
+                } else {
+                    beta = Math.min(beta, score);
+                }
+                if (alpha >= beta) break;
+            }
+            return isMaximizing ? alpha : beta;
+        }
+
+        function evaluateBoard(board) {
+            let score = 0;
+            for (let y = 0; y < BOARD_ROWS; y++) {
+                for (let x = 0; x < BOARD_COLS; x++) {
+                    const piece = board[y][x];
+                    if (piece) {
+                        const value = pieceValues[piece.name];
+                        const positionBonus = getPositionBonus(piece);
+                        const totalValue = value + positionBonus;
+                        score += (piece.color === aiColor) ? totalValue : -totalValue;
+                    }
+                }
+            }
+            return score;
+        }
+        
+        function getPositionBonus(piece) {
+            let bonus = 0;
+            const { name, y } = piece;
+            if (name === '兵' && y < 5) { // Red pawn over river
+                bonus += (4 - y) * 20;
+            } else if (name === '卒' && y > 4) { // Black pawn over river
+                bonus += (y - 5) * 20;
+            }
+            return bonus;
+        }
+
+        function getAllLegalMoves(color, board) {
+            const moves = [];
+            for (let y = 0; y < BOARD_ROWS; y++) {
+                for (let x = 0; x < BOARD_COLS; x++) {
+                    const piece = board[y][x];
+                    if (piece && piece.color === color) {
+                        const legalPieceMoves = getLegalMoves(piece, board);
+                        legalPieceMoves.forEach(move => {
+                            moves.push({ piece, toX: move.toX, toY: move.toY, target: board[move.toY][move.toX] });
+                        });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        boardEl.addEventListener('click', handleBoardClick);
+        window.addEventListener('resize', renderBoard); 
+        
+        restartBtn.addEventListener('click', () => {
+             if (typeof Tone !== 'undefined' && Tone.context.state !== 'running') {
+                Tone.start().then(initGame);
+            } else {
+                initGame();
+            }
+        });
+        victoryModal.addEventListener('click', () => victoryModal.classList.remove('show'));
+        defeatModal.addEventListener('click', () => {
+            defeatModal.classList.remove('show');
+            initGame();
+        });
+        confirmYesBtn.addEventListener('click', () => {
+            if (pendingMove) {
+                movePiece(pendingMove.piece, pendingMove.toX, pendingMove.toY);
+                pendingMove = null;
+            }
+            confirmModal.classList.remove('show');
+        });
+        confirmNoBtn.addEventListener('click', () => {
+            pendingMove = null;
+            selectedPiece = null;
+            clearHighlights();
+            confirmModal.classList.remove('show');
+        });
+
+        setupSounds();
+        initGame();
+    </script>
+
+</body>
+</html>
