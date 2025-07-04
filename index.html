@@ -46,7 +46,7 @@
 
         .game-container {
             width: 100%;
-            max-width: 600px; /* 棋盤畫大一點 */
+            max-width: 700px; /* 棋盤畫大一點 */
             margin: 2rem auto; 
             padding: 1.5rem;
             background-color: var(--board-bg);
@@ -58,7 +58,6 @@
 
         #game-board {
             position: relative;
-            /* SVG Board background with corrected river lines */
             background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 90 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cstyle%3E.river-text %7B font-size: 8px; font-family: 'Ma Shan Zheng', cursive; fill: %238e795e; %7D%3C/style%3E%3C/defs%3E%3C!-- Vertical Lines --%3E%3Cpath d='M5 5 V45 M5 55 V95 M15 5 V45 M15 55 V95 M25 5 V45 M25 55 V95 M35 5 V45 M35 55 V95 M45 5 V45 M45 55 V95 M55 5 V45 M55 55 V95 M65 5 V45 M65 55 V95 M75 5 V45 M75 55 V95 M85 5 V45 M85 55 V95' stroke='%238e795e' stroke-width='0.5'/%3E%3C!-- Horizontal Lines --%3E%3Cpath d='M5 5 H85 M5 15 H85 M5 25 H85 M5 35 H85 M5 45 H85 M5 55 H85 M5 65 H85 M5 75 H85 M5 85 H85 M5 95 H85' stroke='%238e795e' stroke-width='0.5'/%3E%3C!-- Palaces --%3E%3Cpath d='M35 5 L55 25 M55 5 L35 25 M35 75 L55 95 M55 75 L35 95' stroke='%238e795e' stroke-width='0.5'/%3E%3C!-- River --%3E%3Ctext x='17' y='53' class='river-text'%3E楚 河%3C/text%3E%3Ctext x='57' y='53' class='river-text'%3E漢 界%3C/text%3E%3C/svg%3E");
             background-size: 100% 100%;
             background-repeat: no-repeat;
@@ -71,7 +70,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: clamp(1.6rem, 3.5vw, 2.0rem); /* 調整字體大小 */
+            font-size: clamp(1.6rem, 3.5vw, 2.0rem);
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -80,7 +79,6 @@
             box-shadow: inset 0 -3px 5px rgba(0,0,0,0.1), 0 5px 10px var(--piece-shadow);
             border: 3px solid var(--board-border);
             z-index: 10;
-            /* 使用 transform 定位 */
             transform: translate(-50%, -50%);
         }
         
@@ -98,7 +96,6 @@
         
         .piece.selected {
             box-shadow: 0 0 25px 8px var(--selected-glow), inset 0 -3px 5px rgba(0,0,0,0.1);
-            /* transform scale 會疊加，所以分開設定 */
             z-index: 20;
         }
 
