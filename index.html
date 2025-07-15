@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>藍氏象棋</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js 用於音效 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <!-- Supabase 用於資料庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -85,7 +88,6 @@
             transform: translateY(-5px) scale(1.05);
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
-
 
         .game-wrapper {
             background-color: rgba(255, 255, 255, 0.5);
@@ -263,7 +265,7 @@
             position: relative;
             overflow: hidden;
             max-width: 90%;
-            width: 450px;
+            width: 500px; /* 加寬以容納表格 */
         }
         .modal.show .modal-box {
             transform: scale(1);
@@ -282,6 +284,7 @@
             display: flex;
             justify-content: center;
             gap: 1rem;
+            margin-top: 1rem;
         }
         .modal-box button {
             padding: 0.5rem 1.5rem;
@@ -298,11 +301,11 @@
         .modal-box .confirm-yes:hover {
             background-color: #a53c27;
         }
-        .modal-box .confirm-no {
+        .modal-box .confirm-no, .modal-box .close-btn {
             background-color: #ccc;
             color: #333;
         }
-        .modal-box .confirm-no:hover {
+        .modal-box .confirm-no:hover, .modal-box .close-btn:hover {
             background-color: #bbb;
         }
         
@@ -350,6 +353,66 @@
             background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
             color: #333;
         }
+        
+        /* 新增：遊戲紀錄 Modal 樣式 */
+        #history-modal .modal-box {
+            background: linear-gradient(135deg, #e8e8e8, #f8f8f8);
+            color: #333;
+            text-align: left;
+        }
+        #history-modal h2 {
+            text-align: center;
+            font-size: 2.5rem;
+        }
+        #history-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+        #history-stats div {
+            text-align: center;
+        }
+        #history-stats .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--board-border);
+        }
+        #history-stats .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        #history-table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        #history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #history-table th, #history-table td {
+            padding: 0.75rem;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        #history-table th {
+            background-color: #f0f0f0;
+            position: sticky;
+            top: 0;
+        }
+        #history-table tr:last-child td {
+            border-bottom: none;
+        }
+        #history-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .result-win { color: #28a745; font-weight: bold; }
+        .result-loss { color: #dc3545; font-weight: bold; }
+        .result-draw { color: #6c757d; font-weight: bold; }
 
     </style>
 </head>
@@ -373,6 +436,7 @@
             <div class="game-controls">
                 <button id="undo-button" class="control-button">悔棋</button>
                 <button id="restart-button" class="control-button">重新開始</button>
+                <button id="history-button" class="control-button">遊戲紀錄</button>
                 <button id="back-to-menu-btn" class="control-button">回主畫面</button>
             </div>
         </div>
@@ -426,7 +490,6 @@
         </div>
     </div>
     
-    <!-- 新增：返回主選單確認視窗 -->
     <div id="back-to-menu-confirm-modal" class="modal">
         <div class="modal-box">
             <h2>返回主選單？</h2>
@@ -437,8 +500,55 @@
             </div>
         </div>
     </div>
+    
+    <!-- 新增：遊戲紀錄 Modal -->
+    <div id="history-modal" class="modal">
+        <div class="modal-box">
+            <h2>遊戲紀錄</h2>
+            <div id="history-stats">
+                <!-- 統計數據將由 JS 動態填入 -->
+            </div>
+            <div id="history-table-container">
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>難度</th>
+                            <th>結果</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- 歷史紀錄將由 JS 動態填入 -->
+                    </tbody>
+                </table>
+            </div>
+             <div id="history-error" class="text-red-500 mt-4 text-center hidden"></div>
+            <div class="modal-buttons">
+                <button id="history-close-btn" class="close-btn">關閉</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
+        // --- Supabase 設定 ---
+        // 請將 'YOUR_SUPABASE_URL' 和 'YOUR_SUPABASE_ANON_KEY' 替換成您自己的 Supabase 專案資訊
+        const SUPABASE_URL = 'https://miixidjkojjuwiikklvo.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1paXhpZGprb2pqdXdpaWtrbHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNzkzMjYsImV4cCI6MjA2Nzc1NTMyNn0.j5xBHAUginwitWKo_ADOXSHM0C-UWv8HLZgY8efmVeQ';
+        let supabase = null;
+        let userId = 'default-user'; // 在真實應用中，這應該是登入後的使用者ID
+
+        try {
+            if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_KEY !== 'YOUR_SUPABASE_ANON_KEY') {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                console.log('Supabase 連線成功');
+            } else {
+                 console.warn('Supabase URL 或 Key 未設定，遊戲紀錄功能將無法使用。');
+            }
+        } catch (error) {
+            console.error('Supabase 初始化失敗:', error);
+        }
+
         // --- DOM 元素 ---
         const mainMenu = document.getElementById('main-menu');
         const gameWrapper = document.querySelector('.game-wrapper');
@@ -448,6 +558,7 @@
         const restartBtn = document.getElementById('restart-button');
         const undoBtn = document.getElementById('undo-button');
         const backToMenuBtn = document.getElementById('back-to-menu-btn');
+        const historyBtn = document.getElementById('history-button');
         
         // --- 彈出視窗 ---
         const victoryModal = document.getElementById('victory-modal');
@@ -465,6 +576,11 @@
         const backToMenuConfirmModal = document.getElementById('back-to-menu-confirm-modal');
         const backToMenuYesBtn = document.getElementById('back-to-menu-yes-btn');
         const backToMenuNoBtn = document.getElementById('back-to-menu-no-btn');
+        const historyModal = document.getElementById('history-modal');
+        const historyCloseBtn = document.getElementById('history-close-btn');
+        const historyStatsEl = document.getElementById('history-stats');
+        const historyTableBodyEl = document.getElementById('history-table-body');
+        const historyErrorEl = document.getElementById('history-error');
 
         // --- 遊戲常數 ---
         const BOARD_COLS = 9;
@@ -939,24 +1055,144 @@
             return false;
         }
         
-        function endGame(winner, isDraw = false) {
+        async function endGame(winner, isDraw = false) {
             gameOver = true;
             if (aiThinkingInterval) clearInterval(aiThinkingInterval);
             aiThinkingInterval = null;
             updateUndoButton();
+            
+            let result;
             if (isDraw) {
                 statusEl.textContent = '和局！';
+                result = 'draw';
             } else {
                 statusEl.textContent = `遊戲結束！${winner}獲勝！`;
                 const winnerColor = winner === '紅方' ? 'red' : 'black';
                 if (winnerColor === playerColor) {
                     showVictoryModal();
+                    result = 'win';
                 } else {
                     showDefeatModal();
+                    result = 'loss';
                 }
+            }
+            
+            // 儲存遊戲結果到 Supabase
+            await saveGameResult(result);
+        }
+
+        // --- 新增：Supabase 相關函式 ---
+        async function saveGameResult(result) {
+            if (!supabase) {
+                console.log('Supabase 未初始化，無法儲存遊戲紀錄。');
+                return;
+            }
+            try {
+                const { error } = await supabase
+                    .from('game_history_chess') // 您的資料表名稱
+                    .insert([
+                        { 
+                            user_id: userId, 
+                            result: result, // 'win', 'loss', or 'draw'
+                            difficulty: aiDifficulty, // 'intermediate' or 'expert'
+                            played_at: new Date().toISOString()
+                        }
+                    ]);
+                if (error) throw error;
+                console.log('遊戲紀錄已儲存:', { result, difficulty: aiDifficulty });
+            } catch (error) {
+                console.error('儲存遊戲紀錄失敗:', error.message);
             }
         }
 
+        async function showHistoryModal() {
+            if (!supabase) {
+                historyErrorEl.textContent = '資料庫連線失敗，無法讀取紀錄。';
+                historyErrorEl.classList.remove('hidden');
+                historyModal.classList.add('show');
+                return;
+            }
+
+            historyErrorEl.classList.add('hidden');
+            historyTableBodyEl.innerHTML = '<tr><td colspan="3">讀取中...</td></tr>';
+            historyStatsEl.innerHTML = '';
+            historyModal.classList.add('show');
+
+            try {
+                const { data, error } = await supabase
+                    .from('game_history_chess')
+                    .select('result, difficulty, played_at')
+                    .eq('user_id', userId)
+                    .order('played_at', { ascending: false });
+
+                if (error) throw error;
+
+                populateHistoryModal(data);
+
+            } catch (error) {
+                console.error('讀取遊戲紀錄失敗:', error.message);
+                historyTableBodyEl.innerHTML = '';
+                historyErrorEl.textContent = `讀取紀錄失敗: ${error.message}`;
+                historyErrorEl.classList.remove('hidden');
+            }
+        }
+
+        function populateHistoryModal(records) {
+            // 計算統計數據
+            const totalGames = records.length;
+            const wins = records.filter(r => r.result === 'win').length;
+            const losses = records.filter(r => r.result === 'loss').length;
+            
+            historyStatsEl.innerHTML = `
+                <div>
+                    <div class="stat-value">${totalGames}</div>
+                    <div class="stat-label">總場次</div>
+                </div>
+                <div>
+                    <div class="stat-value">${wins}</div>
+                    <div class="stat-label">勝利</div>
+                </div>
+                <div>
+                    <div class="stat-value">${losses}</div>
+                    <div class="stat-label">失敗</div>
+                </div>
+            `;
+
+            // 填充表格
+            if (records.length === 0) {
+                historyTableBodyEl.innerHTML = '<tr><td colspan="3">尚無遊戲紀錄</td></tr>';
+                return;
+            }
+
+            historyTableBodyEl.innerHTML = records.map(record => {
+                const date = new Date(record.played_at).toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const difficultyText = record.difficulty === 'expert' ? '高手' : '中手';
+                let resultText, resultClass;
+                switch (record.result) {
+                    case 'win':
+                        resultText = '勝利';
+                        resultClass = 'result-win';
+                        break;
+                    case 'loss':
+                        resultText = '失敗';
+                        resultClass = 'result-loss';
+                        break;
+                    default:
+                        resultText = '和局';
+                        resultClass = 'result-draw';
+                        break;
+                }
+                return `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${difficultyText}</td>
+                        <td class="${resultClass}">${resultText}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // --- Modal 動畫效果 ---
         function showVictoryModal() {
             const victoryBox = victoryModal.querySelector('.modal-box');
             victoryBox.innerHTML = '<h2>大獲全勝！</h2><p>您已成功擊敗對手！</p>';
@@ -1211,15 +1447,10 @@
         boardEl.addEventListener('click', handleBoardClick);
         window.addEventListener('resize', renderBoard); 
         
-        restartBtn.addEventListener('click', () => {
-            restartConfirmModal.classList.add('show');
-        });
-        
+        restartBtn.addEventListener('click', () => restartConfirmModal.classList.add('show'));
         undoBtn.addEventListener('click', handleUndo);
-        
-        backToMenuBtn.addEventListener('click', () => {
-            backToMenuConfirmModal.classList.add('show');
-        });
+        backToMenuBtn.addEventListener('click', () => backToMenuConfirmModal.classList.add('show'));
+        historyBtn.addEventListener('click', showHistoryModal); // 新增
 
         difficultyButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -1249,12 +1480,8 @@
             confirmModal.classList.remove('show');
         });
         
-        undoYesBtn.addEventListener('click', () => {
-            executeUndo();
-        });
-        undoNoBtn.addEventListener('click', () => {
-            undoModal.classList.remove('show');
-        });
+        undoYesBtn.addEventListener('click', executeUndo);
+        undoNoBtn.addEventListener('click', () => undoModal.classList.remove('show'));
         
         restartYesBtn.addEventListener('click', () => {
             restartConfirmModal.classList.remove('show');
@@ -1264,15 +1491,12 @@
                 initGame();
             }
         });
-        restartNoBtn.addEventListener('click', () => {
-            restartConfirmModal.classList.remove('show');
-        });
+        restartNoBtn.addEventListener('click', () => restartConfirmModal.classList.remove('show'));
         
         backToMenuYesBtn.addEventListener('click', goToMainMenu);
-        backToMenuNoBtn.addEventListener('click', () => {
-            backToMenuConfirmModal.classList.remove('show');
-        });
-
+        backToMenuNoBtn.addEventListener('click', () => backToMenuConfirmModal.classList.remove('show'));
+        
+        historyCloseBtn.addEventListener('click', () => historyModal.classList.remove('show')); // 新增
 
         // --- 遊戲啟動 ---
         setupSounds();
