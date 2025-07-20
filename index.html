@@ -588,7 +588,7 @@
 
         // --- AI 相關常數 ---
         let AI_CURRENT_SEARCH_DEPTH = 2; // 預設中手難度
-        const AI_TIME_LIMIT_MS = 4500; // 4.5 秒，確保在 5 秒內響應
+        let AI_TIME_LIMIT_MS = 9500; // 9.5 秒，確保在 10 秒內響應 (Updated for Grandmaster)
 
         // --- 棋子設定 ---
         const PIECE_CONFIG = {
@@ -677,16 +677,16 @@
         ];
 
         const PST_ROOK_RED = [ // 車/俥
-            [ 90, 90, 90, 90, 90, 90, 90, 90, 90],
-            [ 80, 80, 80, 80, 80, 80, 80, 80, 80],
-            [ 70, 70, 70, 70, 70, 70, 70, 70, 70],
-            [ 60, 60, 60, 60, 60, 60, 60, 60, 60],
-            [ 50, 50, 50, 50, 50, 50, 50, 50, 50],
-            [ 40, 40, 40, 40, 40, 40, 40, 40, 40],
-            [ 30, 30, 30, 30, 30, 30, 30, 30, 30],
-            [ 20, 20, 20, 20, 20, 20, 20, 20, 20],
-            [ 10, 10, 10, 10, 10, 10, 10, 10, 10],
-            [  0,  0,  0,  0,  0,  0,  0,  0,  0]
+            [100, 100, 100, 100, 100, 100, 100, 100, 100],
+            [ 90,  90,  90,  90,  90,  90,  90,  90,  90],
+            [ 80,  80,  80,  80,  80,  80,  80,  80,  80],
+            [ 70,  70,  70,  70,  70,  70,  70,  70,  70],
+            [ 60,  60,  60,  60,  60,  60,  60,  60,  60],
+            [ 50,  50,  50,  50,  50,  50,  50,  50,  50],
+            [ 40,  40,  40,  40,  40,  40,  40,  40,  40],
+            [ 30,  30,  30,  30,  30,  30,  30,  30,  30],
+            [ 20,  20,  20,  20,  20,  20,  20,  20,  20],
+            [ 10,  10,  10,  10,  10,  10,  10,  10,  10]
         ];
 
         const PST_HORSE_RED = [ // 馬/傌
@@ -715,12 +715,12 @@
             [  0,  0,  0,  0,  0,  0,  0,  0,  0]
         ];
 
-        const PST_PAWN_RED = [ // 兵/卒 (already good, slightly adjusted for consistency)
+        const PST_PAWN_RED = [ // 兵/卒 (adjusted for consistency and more aggressive advancement)
             [ 9,  9,  9, 11, 13, 11,  9,  9,  9],
             [19, 21, 23, 25, 26, 25, 23, 21, 19],
+            [24, 26, 28, 30, 31, 30, 28, 26, 24], /* Increased value for pawns before river crossing */
             [19, 21, 23, 25, 26, 25, 23, 21, 19],
-            [14, 16, 18, 20, 21, 20, 18, 16, 14],
-            [ 7,  9, 11, 12, 13, 12, 11,  9,  7],
+            [12, 14, 16, 17, 18, 17, 16, 14, 12],
             [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
             [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
             [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
@@ -1363,11 +1363,12 @@
                 if (aTargetValue !== bTargetValue) return bTargetValue - aTargetValue;
 
                 // Further prioritize moves that check the opponent
+                // Simulate the move to check if it results in a check
                 const aChecks = isKingInCheck(playerColor, simulateMove(boardState, a.piece, a.toX, a.toY));
                 const bChecks = isKingInCheck(playerColor, simulateMove(boardState, b.piece, b.toX, b.toY));
 
-                if (aChecks && !bChecks) return -1;
-                if (!aChecks && bChecks) return 1;
+                if (aChecks && !bChecks) return -1; // a checks, b doesn't: a is better
+                if (!aChecks && bChecks) return 1;  // b checks, a doesn't: b is better
 
                 return 0; // Keep original order if no clear priority
             });
@@ -1378,7 +1379,8 @@
                 // Check time limit for Grandmaster difficulty
                 if (aiDifficulty === 'grandmaster' && (performance.now() - searchStartTime) > AI_TIME_LIMIT_MS) {
                     console.log("AI Time limit reached, returning current best move.");
-                    return currentBestMove || moves[0]; // Return the best found so far, or the first move
+                    // Return the best found so far, or the first move if no best move has been found yet
+                    return currentBestMove || moves[0]; 
                 }
 
                 const boardCopy = simulateMove(boardState, move.piece, move.toX, move.toY); // Use simulateMove helper
@@ -1462,18 +1464,17 @@
             const fromX = piece.x;
             const fromY = piece.y;
 
+            // Defensive check: ensure the piece exists at the expected 'from' position on the tempBoard
+            if (!tempBoard[fromY] || !tempBoard[fromY][fromX] || tempBoard[fromY][fromX].name !== piece.name || tempBoard[fromY][fromX].color !== piece.color) {
+                // This indicates a potential inconsistency. For robustness, we might try to find the piece
+                // elsewhere on the board if it's a deep search, but for direct moves, this is an error.
+                // For now, we'll return a copy of the original board to prevent further cascade of errors.
+                console.warn(`SimulateMove: Piece (${piece.name}, ${piece.color}) not found at expected position (${fromX}, ${fromY}) on tempBoard. Returning original board.`);
+                return JSON.parse(JSON.stringify(board)); // Return a fresh copy of the original board
+            }
+            
             // Retrieve the piece from the tempBoard. This piece object is a *copy*
             // and its x, y properties need to be updated for the simulation.
-            // Ensure tempBoard[fromY] exists before accessing tempBoard[fromY][fromX]
-            if (!tempBoard[fromY] || !tempBoard[fromY][fromX]) {
-                // This scenario indicates an inconsistency, possibly a piece not being where it's expected.
-                // For a robust simulation, we should ideally not reach here if the input 'board' is valid.
-                // However, as a fallback, we can try to find the piece by its name and color if needed,
-                // but for performance and correctness, it's better to ensure 'piece.x' and 'piece.y' are always correct.
-                console.warn(`Attempted to simulate move for piece not found at (${fromX}, ${fromY}) on tempBoard. Piece:`, piece);
-                // Return original board to prevent further errors in simulation chain
-                return board; 
-            }
             const pieceToMoveInTempBoard = tempBoard[fromY][fromX];
             
             // Update the coordinates of the piece object *within the tempBoard*
@@ -1531,7 +1532,6 @@
         // Enhanced evaluation function
         function evaluateBoard(board) {
             let score = 0;
-            // No need to find AI/player kings here, as they are found within getKingSafetyBonus if needed.
 
             for (let y = 0; y < BOARD_ROWS; y++) {
                 for (let x = 0; x < BOARD_COLS; x++) {
@@ -1542,6 +1542,7 @@
                         let mobilityBonus = getMobilityBonus(piece, board);
                         let threatBonus = getThreatBonus(piece, board);
                         let kingSafetyBonus = 0;
+                        let controlBonus = 0; // New bonus for controlling lines
 
                         if (aiDifficulty === 'grandmaster') {
                             // Grandmaster specific evaluation
@@ -1553,9 +1554,13 @@
                             if ((piece.name === '兵' || piece.name === '卒') && (x >= 3 && x <= 5)) {
                                 positionalBonus += 5; // Small bonus for central pawns
                             }
+                            // Add bonus for Rooks/Cannons on open files/ranks
+                            if (piece.name === '俥' || piece.name === '車' || piece.name === '砲' || piece.name === '炮') {
+                                controlBonus = getLineControlBonus(piece, board);
+                            }
                         }
 
-                        const totalValue = value + positionalBonus + mobilityBonus + threatBonus + kingSafetyBonus;
+                        const totalValue = value + positionalBonus + mobilityBonus + threatBonus + kingSafetyBonus + controlBonus;
                         score += (piece.color === aiColor) ? totalValue : -totalValue;
                     }
                 }
@@ -1607,7 +1612,7 @@
         function getMobilityBonus(piece, board) {
             if (aiDifficulty !== 'grandmaster') return 0; // Only for Grandmaster
             const moves = getLegalMoves(piece, board);
-            return moves.length * 2; // Each legal move adds 2 points
+            return moves.length * 2; // Each legal move adds 2 points (can be adjusted)
         }
 
         function getThreatBonus(piece, board) {
@@ -1634,7 +1639,9 @@
             const myColor = piece.color;
             const attackingOpponentMoves = getAllLegalMoves(opponentColor, board);
             for (const oppMove of attackingOpponentMoves) {
-                if (oppMove.toX === piece.x && oppMove.toY === piece.y) {
+                // Ensure oppMove.piece is valid and its current position is correctly used
+                const attackerPiece = board[oppMove.piece.y][oppMove.piece.x];
+                if (attackerPiece && isValidMove(attackerPiece, piece.x, piece.y, board)) {
                     // This piece is attacked
                     const isDefended = isPieceDefended(piece, board, myColor);
                     if (!isDefended) {
@@ -1649,7 +1656,7 @@
             for (let y = 0; y < BOARD_ROWS; y++) {
                 for (let x = 0; x < BOARD_COLS; x++) {
                     const defender = board[y][x];
-                    if (defender && defender.color === defenderColor && defender !== piece) {
+                    if (defender && defender.color === defenderColor && (defender.x !== piece.x || defender.y !== piece.y)) {
                         // Create a temporary defender piece for isValidMove to use
                         const tempDefenderForValidation = {
                             name: defender.name,
@@ -1672,7 +1679,7 @@
 
             // Check for immediate threats
             if (isKingInCheck(kingColor, board)) {
-                safety -= 100; // Major penalty for being in check
+                safety -= 1000; // Major penalty for being in check, increased value
             }
 
             // Check for advisors/elephants protection
@@ -1693,10 +1700,10 @@
                 }
             }
 
-            if (advisorsCount === 2) safety += 30; // Both advisors present
-            if (elephantsCount === 2) safety += 30; // Both elephants present
-            if (advisorsCount === 1) safety += 10;
-            if (elephantsCount === 1) safety += 10;
+            if (advisorsCount === 2) safety += 50; // Both advisors present, increased bonus
+            if (elephantsCount === 2) safety += 50; // Both elephants present, increased bonus
+            if (advisorsCount === 1) safety += 20;
+            if (elephantsCount === 1) safety += 20;
 
             // Proximity of opponent pieces to the palace
             for (let y = 0; y < BOARD_ROWS; y++) {
@@ -1705,14 +1712,95 @@
                     if (piece && piece.color === opponentColor) {
                         const dist = Math.abs(x - king.x) + Math.abs(y - king.y);
                         if (dist <= 2) { // Opponent piece very close to king
-                            safety -= pieceValues[piece.name] * 0.05;
+                            safety -= pieceValues[piece.name] * 0.1; // Increased penalty
                         } else if (dist <= 4) { // Opponent piece near palace
-                            safety -= pieceValues[piece.name] * 0.02;
+                            safety -= pieceValues[piece.name] * 0.05; // Increased penalty
                         }
                     }
                 }
             }
+
+            // Check for open files/ranks leading to the king
+            // Vertical check (same column as king)
+            let hasVerticalBlocker = false;
+            for (let r = 0; r < BOARD_ROWS; r++) {
+                if (r !== king.y && board[r][king.x] !== null) {
+                    hasVerticalBlocker = true;
+                    break;
+                }
+            }
+            if (!hasVerticalBlocker) { // Open file
+                safety -= 30; // Penalty for open file
+            }
+
+            // Horizontal check (same row as king, within palace bounds for general)
+            // This is less common for general, but can be relevant for other pieces that attack general
+            if (king.y >= palaceMinY && king.y <= palaceMaxY) {
+                let hasHorizontalBlocker = false;
+                for (let c = 0; c < BOARD_COLS; c++) {
+                    if (c !== king.x && board[king.y][c] !== null) {
+                        hasHorizontalBlocker = true;
+                        break;
+                    }
+                }
+                if (!hasHorizontalBlocker) { // Open rank within palace
+                    safety -= 20; // Smaller penalty
+                }
+            }
+
             return safety;
+        }
+
+        // New evaluation term: bonus for Rooks/Cannons controlling open files/ranks
+        function getLineControlBonus(piece, board) {
+            let bonus = 0;
+            const { name, color, x, y } = piece;
+            const opponentColor = color === 'red' ? 'black' : 'red';
+
+            if (name === '俥' || name === '車') { // Rook
+                // Check if the file is open (no pieces of either color)
+                let isFileOpen = true;
+                for (let r = 0; r < BOARD_ROWS; r++) {
+                    if (r !== y && board[r][x] !== null) {
+                        isFileOpen = false;
+                        break;
+                    }
+                }
+                if (isFileOpen) bonus += 15; // Bonus for controlling an open file
+
+                // Check if the rank is open
+                let isRankOpen = true;
+                for (let c = 0; c < BOARD_COLS; c++) {
+                    if (c !== x && board[y][c] !== null) {
+                        isRankOpen = false;
+                        break;
+                    }
+                }
+                if (isRankOpen) bonus += 15; // Bonus for controlling an open rank
+            } else if (name === '砲' || name === '炮') { // Cannon
+                // Cannons are powerful on open files/ranks for potential captures
+                // Check for potential attacks via open lines
+                // Vertical
+                let piecesInFront = 0;
+                for (let r = y - 1; r >= 0; r--) {
+                    if (board[r][x]) piecesInFront++;
+                }
+                for (let r = y + 1; r < BOARD_ROWS; r++) {
+                    if (board[r][x]) piecesInFront++;
+                }
+                if (piecesInFront === 1) bonus += 10; // Good for cannon to have one piece to jump over
+
+                // Horizontal
+                let piecesBeside = 0;
+                for (let c = x - 1; c >= 0; c--) {
+                    if (board[y][c]) piecesBeside++;
+                }
+                for (let c = x + 1; c < BOARD_COLS; c++) {
+                    if (board[y][c]) piecesBeside++;
+                }
+                if (piecesBeside === 1) bonus += 10; // Good for cannon to have one piece to jump over
+            }
+            return bonus;
         }
 
 
@@ -1790,10 +1878,13 @@
                 // Set AI search depth based on difficulty
                 if (aiDifficulty === 'intermediate') {
                     AI_CURRENT_SEARCH_DEPTH = 2;
+                    AI_TIME_LIMIT_MS = 4500; // Reset time limit for lower difficulties
                 } else if (aiDifficulty === 'expert') {
                     AI_CURRENT_SEARCH_DEPTH = 3;
+                    AI_TIME_LIMIT_MS = 4500; // Reset time limit for lower difficulties
                 } else if (aiDifficulty === 'grandmaster') {
-                    AI_CURRENT_SEARCH_DEPTH = 4; // Deeper search for grandmaster
+                    AI_CURRENT_SEARCH_DEPTH = 5; // Deeper search for grandmaster
+                    AI_TIME_LIMIT_MS = 9500; // Increased time limit for grandmaster
                 }
                 
                 mainMenu.classList.add('hidden');
