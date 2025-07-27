@@ -719,8 +719,8 @@
             [ 9,  9,  9, 11, 13, 11,  9,  9,  9],
             [19, 21, 23, 25, 26, 25, 23, 21, 19],
             [24, 26, 28, 30, 31, 30, 28, 26, 24], /* Increased value for pawns before river crossing */
-            [19, 21, 23, 25, 26, 25, 23, 21, 19],
-            [12, 14, 16, 17, 18, 17, 16, 14, 12],
+            [29, 31, 33, 35, 36, 35, 33, 31, 29], // Higher value after crossing river
+            [32, 34, 36, 38, 39, 38, 36, 34, 32], // Even higher value for deeper penetration
             [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
             [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
             [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
@@ -1539,22 +1539,18 @@
                     if (piece) {
                         let value = pieceValues[piece.name];
                         let positionalBonus = getPositionBonus(piece);
-                        let mobilityBonus = getMobilityBonus(piece, board);
-                        let threatBonus = getThreatBonus(piece, board);
+                        let mobilityBonus = 0;
+                        let threatBonus = 0;
                         let kingSafetyBonus = 0;
-                        let controlBonus = 0; // New bonus for controlling lines
+                        let controlBonus = 0; 
 
                         if (aiDifficulty === 'grandmaster') {
-                            // Grandmaster specific evaluation
+                            mobilityBonus = getMobilityBonus(piece, board);
+                            threatBonus = getThreatBonus(piece, board);
                             const kingName = piece.color === 'red' ? '帥' : '將';
-                            if (piece.name === kingName) { // Check if the piece is a king
+                            if (piece.name === kingName) { 
                                 kingSafetyBonus = getKingSafetyBonus(piece, board, piece.color);
                             }
-                            // Central control bonus (example for pawns/soldiers)
-                            if ((piece.name === '兵' || piece.name === '卒') && (x >= 3 && x <= 5)) {
-                                positionalBonus += 5; // Small bonus for central pawns
-                            }
-                            // Add bonus for Rooks/Cannons on open files/ranks
                             if (piece.name === '俥' || piece.name === '車' || piece.name === '砲' || piece.name === '炮') {
                                 controlBonus = getLineControlBonus(piece, board);
                             }
@@ -1610,13 +1606,12 @@
         }
 
         function getMobilityBonus(piece, board) {
-            if (aiDifficulty !== 'grandmaster') return 0; // Only for Grandmaster
+            // Calculate mobility bonus based on the number of legal moves
             const moves = getLegalMoves(piece, board);
             return moves.length * 2; // Each legal move adds 2 points (can be adjusted)
         }
 
         function getThreatBonus(piece, board) {
-            if (aiDifficulty !== 'grandmaster') return 0; // Only for Grandmaster
             let bonus = 0;
             const opponentColor = piece.color === 'red' ? 'black' : 'red';
 
